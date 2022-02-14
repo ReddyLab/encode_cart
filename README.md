@@ -3,7 +3,7 @@
 * [requests](https://docs.python-requests.org/en/latest/)
 
 ## Installation
-Clone the repository with `git clone ...`. Change into the repository directory. Optionally, create a virtual environment. Then run `pip install -r requirements.txt`.
+Clone the repository with `git clone https://github.com/ReddyLab/encode_cart.git` then change into the repository directory. Optionally, you can create a virtual environment. Finally, run `pip install -r requirements.txt`.
 
 ## Run
 
