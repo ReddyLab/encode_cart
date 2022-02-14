@@ -23,48 +23,53 @@ def load_accessions(accesion_file) -> list[str]:
     return [accession_id.strip() for accession_id in accesion_file]
 
 
+def create_cart(url, auth, cart_name):
+    request_body = {"name": cart_name}
+    create_response = requests.put(url, json=request_body, auth=auth)
+    create_json = create_response.json()
+
+    if create_json["status"] != "success":
+        raise Exception(f"Create cart request failed: {create_json}")
+
+    return create_json
+
+
+def add_to_cart(url, auth, accession_ids, cart_name):
+    request_body = {"elements": accession_ids, "name": cart_name}
+    put_response = requests.put(url, json=request_body, auth=auth)
+    put_response_json = put_response.json()
+
+    if put_response_json["status"] != "success":
+        raise Exception(f"Add items to cart failed: {put_response_json}")
+
+    return put_response_json
+
+
 def main(test, auth_file, accession_file, cart_name):
     base_url = TEST_URL if test else PROD_URL
-    create_json = {"name": cart_name}
+
     auth = load_auth(auth_file)
 
     try:
-        create_response = requests.put(
-            create_url(base_url), json=create_json, auth=auth
-        )
-        create_json = create_response.json()
+        create_response_json = create_cart(create_url(base_url), auth, cart_name)
     except Exception as e:
-        print(e)
-        exit(1)
-
-    if create_json["status"] != "success":
-        print(f"Create cart request failed: {create_json}")
+        raise e
 
     try:
-        cart_id = create_json["@graph"][0]
+        cart_id = create_response_json["@graph"][0]
     except:
-        print(f"malformed json: {create_json}")
-        exit(1)
-
-    print(f"cart id: {cart_id}")
+        raise Exception(f"malformed json: {create_response_json}")
 
     accession_ids = load_accessions(accession_file)
 
-    put_request_json = {"elements": accession_ids, "name": cart_name}
     try:
-        put_response = requests.put(
-            cart_url(base_url, cart_id), json=put_request_json, auth=auth
+        put_response_json = add_to_cart(
+            cart_url(base_url, cart_id), auth, accession_ids, cart_name
         )
-        put_response_json = put_response.json()
     except Exception as e:
-        print(e)
-        exit(1)
+        raise e
 
-    if put_response_json["status"] != "success":
-        print(f"Add items to cart request failed: {put_response_json}")
-        exit(1)
-
-    print(f"Items Added to Cart:\n{put_response_json}")
+    return cart_id, put_response_json
 
 
 def parse_args():
@@ -79,4 +84,14 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    main(args.test, args.authfile, args.accessions, args.name)
+
+    try:
+        cart_id, add__to_cart_json = main(
+            args.test, args.authfile, args.accessions, args.name
+        )
+    except Exception as e:
+        print(e)
+        exit(1)
+
+    print(f"Cart id: {cart_id}")
+    print(f"Items Added to Cart:\n{add__to_cart_json}")
